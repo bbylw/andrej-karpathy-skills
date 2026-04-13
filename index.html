@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Karpathy 启发式 Claude Code 指南</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Noto Sans SC"', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            ink: '#0a0a0b',
+            parchment: '#f5f0e8',
+            warm: '#e8e0d0',
+            accent: '#c45d3e',
+            accent2: '#2d6a4f',
+            muted: '#6b6560',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    html { scroll-behavior: smooth; }
+    body { background: #f5f0e8; }
+
+    .grain {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.03;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 256px;
+    }
+
+    .hero-gradient {
+      background: linear-gradient(135deg, #0a0a0b 0%, #1a1a2e 40%, #16213e 70%, #0a0a0b 100%);
+    }
+
+    .card-hover {
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .card-hover:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(10,10,11,0.12);
+    }
+
+    .fade-in {
+      animation: fadeUp 0.6s ease both;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .stagger-1 { animation-delay: 0.1s; }
+    .stagger-2 { animation-delay: 0.2s; }
+    .stagger-3 { animation-delay: 0.3s; }
+    .stagger-4 { animation-delay: 0.4s; }
+
+    .quote-line {
+      border-left: 3px solid #c45d3e;
+    }
+
+    .principle-num {
+      font-size: 6rem;
+      font-weight: 900;
+      line-height: 1;
+      color: rgba(196, 93, 62, 0.08);
+      position: absolute;
+      top: -1rem;
+      right: 1rem;
+      user-select: none;
+    }
+
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      background: rgba(10,10,11,0.06);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.85em;
+    }
+
+    pre code {
+      background: none;
+      padding: 0;
+    }
+
+    .nav-link {
+      position: relative;
+    }
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: #c45d3e;
+      transition: width 0.3s ease;
+    }
+    .nav-link:hover::after {
+      width: 100%;
+    }
+  </style>
+</head>
+<body class="font-sans text-ink antialiased">
+  <div class="grain"></div>
+
+  <!-- Nav -->
+  <nav class="fixed top-0 w-full z-50 backdrop-blur-md bg-parchment/80 border-b border-warm">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <a href="#" class="font-bold text-lg tracking-tight">
+        <span class="text-accent">K</span>arpathy 指南
+      </a>
+      <div class="hidden md:flex items-center gap-8 text-sm font-medium text-muted">
+        <a href="#problems" class="nav-link hover:text-ink transition-colors">问题</a>
+        <a href="#principles" class="nav-link hover:text-ink transition-colors">四大原则</a>
+        <a href="#install" class="nav-link hover:text-ink transition-colors">安装</a>
+        <a href="#effectiveness" class="nav-link hover:text-ink transition-colors">有效性</a>
+        <a href="https://github.com/forrestchang/andrej-karpathy-skills" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-2 bg-ink text-parchment rounded-full hover:bg-ink/80 transition-colors">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+          GitHub
+        </a>
+      </div>
+      <!-- Mobile menu button -->
+      <button id="mobile-menu-btn" class="md:hidden p-2 text-muted hover:text-ink">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+    </div>
+    <!-- Mobile menu -->
+    <div id="mobile-menu" class="hidden md:hidden bg-parchment border-t border-warm">
+      <div class="px-6 py-4 flex flex-col gap-3 text-sm font-medium text-muted">
+        <a href="#problems" class="hover:text-ink">问题</a>
+        <a href="#principles" class="hover:text-ink">四大原则</a>
+        <a href="#install" class="hover:text-ink">安装</a>
+        <a href="#effectiveness" class="hover:text-ink">有效性</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero-gradient relative overflow-hidden pt-32 pb-24 md:pt-44 md:pb-36">
+    <div class="absolute inset-0 opacity-10">
+      <div class="absolute top-20 left-10 w-72 h-72 bg-accent rounded-full blur-[120px]"></div>
+      <div class="absolute bottom-10 right-20 w-96 h-96 bg-blue-500 rounded-full blur-[150px]"></div>
+    </div>
+    <div class="max-w-4xl mx-auto px-6 relative z-10 text-center">
+      <div class="fade-in">
+        <p class="text-sm font-mono tracking-widest uppercase text-gray-400 mb-6">Andrej Karpathy 启发</p>
+        <h1 class="text-4xl md:text-6xl lg:text-7xl font-black text-white leading-[1.1] mb-8 tracking-tight">
+          Claude Code<br>
+          <span class="bg-gradient-to-r from-amber-300 via-orange-400 to-red-400 bg-clip-text text-transparent">编程行为指南</span>
+        </h1>
+        <p class="text-lg md:text-xl text-gray-300 max-w-2xl mx-auto leading-relaxed mb-10">
+          一个 <code class="bg-white/10 text-amber-300 px-2 py-1 rounded">CLAUDE.md</code> 文件，四条原则，<br class="hidden md:block">解决 LLM 编程中最常见的陷阱。
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <a href="#principles" class="px-8 py-3.5 bg-accent text-white font-semibold rounded-full hover:bg-accent/90 transition-colors shadow-lg shadow-accent/25">
+            了解四大原则
+          </a>
+          <a href="#install" class="px-8 py-3.5 bg-white/10 text-white font-semibold rounded-full hover:bg-white/20 transition-colors backdrop-blur border border-white/10">
+            快速安装
+          </a>
+        </div>
+      </div>
+    </div>
+    <!-- Decorative bottom wave -->
+    <div class="absolute bottom-0 left-0 right-0">
+      <svg viewBox="0 0 1440 60" fill="none" class="w-full"><path d="M0 60V20C240 0 480 40 720 30S1200 0 1440 20V60H0Z" fill="#f5f0e8"/></svg>
+    </div>
+  </section>
+
+  <!-- Problems Section -->
+  <section id="problems" class="py-20 md:py-28 relative z-10">
+    <div class="max-w-5xl mx-auto px-6">
+      <div class="text-center mb-16 fade-in">
+        <p class="text-sm font-mono tracking-widest uppercase text-accent mb-3">现状诊断</p>
+        <h2 class="text-3xl md:text-4xl font-bold tracking-tight">问题所在</h2>
+        <p class="mt-4 text-muted max-w-xl mx-auto">摘自 Andrej Karpathy 关于 LLM 编程陷阱的观察</p>
+      </div>
+
+      <div class="grid gap-6 md:grid-cols-3">
+        <!-- Problem 1 -->
+        <div class="bg-white rounded-2xl p-8 shadow-sm card-hover fade-in stagger-1">
+          <div class="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center mb-5">
+            <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+          </div>
+          <h3 class="font-bold text-lg mb-3">盲目假设</h3>
+          <blockquote class="quote-line pl-4 text-muted text-sm leading-relaxed italic">
+            "模型会代表你做出错误的假设，并直接运行而不进行检查。它们不管理自己的困惑，不寻求澄清，不暴露不一致之处。"
+          </blockquote>
+        </div>
+
+        <!-- Problem 2 -->
+        <div class="bg-white rounded-2xl p-8 shadow-sm card-hover fade-in stagger-2">
+          <div class="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center mb-5">
+            <svg class="w-6 h-6 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+          </div>
+          <h3 class="font-bold text-lg mb-3">过度工程</h3>
+          <blockquote class="quote-line pl-4 text-muted text-sm leading-relaxed italic">
+            "它们非常喜欢过度复杂化代码和 API，膨胀抽象层，不清理死代码……当 100 行就够时，它们会写 1000 行。"
+          </blockquote>
+        </div>
+
+        <!-- Problem 3 -->
+        <div class="bg-white rounded-2xl p-8 shadow-sm card-hover fade-in stagger-3">
+          <div class="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center mb-5">
+            <svg class="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          </div>
+          <h3 class="font-bold text-lg mb-3">副作用修改</h3>
+          <blockquote class="quote-line pl-4 text-muted text-sm leading-relaxed italic">
+            "它们有时仍会修改/删除它们理解不足的代码和注释，将其作为副作用，即使这些内容与任务完全无关。"
+          </blockquote>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Solution Overview -->
+  <section class="py-16 relative z-10 bg-white/50">
+    <div class="max-w-5xl mx-auto px-6">
+      <div class="text-center mb-12 fade-in">
+        <p class="text-sm font-mono tracking-widest uppercase text-accent2 mb-3">解决方案</p>
+        <h2 class="text-3xl md:text-4xl font-bold tracking-tight">一个文件，四条原则</h2>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="text-center p-6 rounded-2xl bg-white shadow-sm card-hover fade-in stagger-1">
+          <div class="text-3xl mb-3">🧠</div>
+          <p class="font-bold text-sm">先思考<br>后编码</p>
+          <p class="text-xs text-muted mt-2">错误假设<br>隐藏困惑</p>
+        </div>
+        <div class="text-center p-6 rounded-2xl bg-white shadow-sm card-hover fade-in stagger-2">
+          <div class="text-3xl mb-3">✂️</div>
+          <p class="font-bold text-sm">简约<br>至上</p>
+          <p class="text-xs text-muted mt-2">过度复杂<br>膨胀抽象</p>
+        </div>
+        <div class="text-center p-6 rounded-2xl bg-white shadow-sm card-hover fade-in stagger-3">
+          <div class="text-3xl mb-3">🎯</div>
+          <p class="font-bold text-sm">精准<br>修改</p>
+          <p class="text-xs text-muted mt-2">无关编辑<br>不该动的代码</p>
+        </div>
+        <div class="text-center p-6 rounded-2xl bg-white shadow-sm card-hover fade-in stagger-4">
+          <div class="text-3xl mb-3">🔄</div>
+          <p class="font-bold text-sm">目标驱动<br>执行</p>
+          <p class="text-xs text-muted mt-2">测试先行<br>可验证标准</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Principles Detail -->
+  <section id="principles" class="py-20 md:py-28 relative z-10">
+    <div class="max-w-5xl mx-auto px-6">
+      <div class="text-center mb-20 fade-in">
+        <p class="text-sm font-mono tracking-widest uppercase text-accent mb-3">深入解读</p>
+        <h2 class="text-3xl md:text-4xl font-bold tracking-tight">四大原则详解</h2>
+      </div>
+
+      <!-- Principle 1 -->
+      <div class="mb-20 fade-in">
+        <div class="relative bg-white rounded-3xl p-8 md:p-12 shadow-sm overflow-hidden">
+          <span class="principle-num">01</span>
+          <div class="relative z-10">
+            <div class="flex items-center gap-4 mb-6">
+              <span class="flex items-center justify-center w-10 h-10 rounded-full bg-accent/10 text-accent font-bold text-sm">1</span>
+              <h3 class="text-2xl md:text-3xl font-bold">先思考，后编码</h3>
+            </div>
+            <p class="text-accent font-semibold text-lg mb-6">不假设。不隐藏困惑。显化权衡。</p>
+            <p class="text-muted mb-8 leading-relaxed">LLM 通常会默默选择一种解释并运行。这一原则强制进行显式推理：</p>
+            <div class="grid sm:grid-cols-2 gap-4">
+              <div class="flex items-start gap-3 p-4 rounded-xl bg-parchment/70">
+                <span class="mt-0.5 w-6 h-6 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">
+                  <svg class="w-3.5 h-3.5 text-accent" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                </span>
+                <div>
+                  <p class="font-semibold text-sm">明确陈述假设</p>
+                  <p class="text-muted text-xs mt-1">如果不确定，宁可询问也不要猜测</p>
+                </div>
+              </div>
+              <div class="flex items-start gap-3 p-4 rounded-xl bg-parchment/70">
+                <span class="mt-0.5 w-6 h-6 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">
+                  <svg class="w-3.5 h-3.5 text-accent" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                </span>
+                <div>
+                  <p class="font-semibold text-sm">提供多种解释</p>
+                  <p class="text-muted text-xs mt-1">存在歧义时不要默默做决定</p>
+                </div>
+              </div>
+              <div class="flex items-start gap-3 p-4 rounded-xl bg-parchment/70">
+                <span class="mt-0.5 w-6 h-6 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">
+                  <svg class="w-3.5 h-3.5 text-accent" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                </span>
+                <div>
+                  <p class="font-semibold text-sm">在必要时推辞</p>
+                  <p class="text-muted text-xs mt-1">如果有更简单的方法，请直言</p>
+                </div>
+              </div>
+              <div class="flex items-start gap-3 p-4 rounded-xl bg-parchment/70">
+                <span class="mt-0.5 w-6 h-6 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">
+                  <svg class="w-3.5 h-3.5 text-accent" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                </span>
+                <div>
+                  <p class="font-semibold text-sm">困惑时停止</p>
+                  <p class="text-muted text-xs mt-1">说明不清楚的地方并寻求澄清</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Principle 2 -->
+      <div class="mb-20 fade-in">
+        <div class="relative bg-white rounded-3xl p-8 md:p-12 shadow-sm overflow-hidden">
+          <span class="principle-num">02</span>
+          <div class="relative z-10">
+            <div class="flex items-center gap-4 mb-6">
+              <span class="flex items-center justify-center w-10 h-10 rounded-full bg-accent2/10 text-accent2 font-bold text-sm">2</span>
+              <h3 class="text-2xl md:text-3xl font-bold">简约至上</h3>
+            </div>
+            <p class="text-accent2 font-semibold text-lg mb-6">用最少的代码解决问题。不做任何投机性的尝试。</p>
+            <p class="text-muted mb-8 leading-relaxed">对抗过度工程的倾向：</p>
+            <div class="space-y-3">
+              <div class="flex items-center gap-3 p-4 rounded-xl bg-parchment/70">
+                <svg class="w-5 h-5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                <span class="text-sm">除了要求的功能之外，不添加任何其他功能</span>
+              </div>
+              <div class="flex items-center gap-3 p-4 rounded-xl bg-parchment/70">
+                <svg class="w-5 h-5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                <span class="text-sm">不为仅使用一次的代码建立抽象</span>
+              </div>
+              <div class="flex items-center gap-3 p-4 rounded-xl bg-parchment/70">
+                <svg class="w-5 h-5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                <span class="text-sm">不提供未要求的"灵活性"或"可配置性"</span>
+              </div>
+              <div class="flex items-center gap-3 p-4 rounded-xl bg-parchment/70">
+                <svg class="w-5 h-5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                <span class="text-sm">不针对不可能发生的情况进行错误处理</span>
+              </div>
+              <div class="flex items-center gap-3 p-4 rounded-xl bg-parchment/70">
+                <svg class="w-5 h-5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                <span class="text-sm">如果 200 行代码可以精简为 50 行，请重写</span>
+              </div>
+            </div>
+            <div class="mt-8 p-5 rounded-xl bg-accent2/5 border border-accent2/10">
+              <p class="text-sm"><span class="font-bold text-accent2">测试标准：</span>资深工程师会觉得这太复杂吗？如果是，请简化。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Principle 3 -->
+      <div class="mb-20 fade-in">
+        <div class="relative bg-white rounded-3xl p-8 md:p-12 shadow-sm overflow-hidden">
+          <span class="principle-num">03</span>
+          <div class="relative z-10">
+            <div class="flex items-center gap-4 mb-6">
+              <span class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-500/10 text-blue-600 font-bold text-sm">3</span>
+              <h3 class="text-2xl md:text-3xl font-bold">精准修改</h3>
+            </div>
+            <p class="text-blue-600 font-semibold text-lg mb-6">只触碰必须触碰的部分。只清理自己造成的混乱。</p>
+
+            <div class="grid md:grid-cols-2 gap-8">
+              <div>
+                <h4 class="font-bold mb-4 flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                  编辑现有代码时
+                </h4>
+                <ul class="space-y-3 text-sm text-muted">
+                  <li class="flex items-start gap-2"><span class="text-blue-500 mt-0.5">-</span>不要"改进"相邻的代码、注释或格式</li>
+                  <li class="flex items-start gap-2"><span class="text-blue-500 mt-0.5">-</span>不要重构没有损坏的东西</li>
+                  <li class="flex items-start gap-2"><span class="text-blue-500 mt-0.5">-</span>匹配现有风格，即使你会有不同的做法</li>
+                  <li class="flex items-start gap-2"><span class="text-blue-500 mt-0.5">-</span>如果注意到无关的死代码，请提出来 —— 不要直接删除</li>
+                </ul>
+              </div>
+              <div>
+                <h4 class="font-bold mb-4 flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                  当更改产生孤立代码时
+                </h4>
+                <ul class="space-y-3 text-sm text-muted">
+                  <li class="flex items-start gap-2"><span class="text-green-500 mt-0.5">+</span>删除因你的更改而导致不再使用的导入/变量/函数</li>
+                  <li class="flex items-start gap-2"><span class="text-red-500 mt-0.5">-</span>除非被要求，否则不要删除预先存在的死代码</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="mt-8 p-5 rounded-xl bg-blue-50 border border-blue-100">
+              <p class="text-sm"><span class="font-bold text-blue-600">测试标准：</span>每一行更改都应该能直接追溯到用户的请求。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Principle 4 -->
+      <div class="mb-8 fade-in">
+        <div class="relative bg-white rounded-3xl p-8 md:p-12 shadow-sm overflow-hidden">
+          <span class="principle-num">04</span>
+          <div class="relative z-10">
+            <div class="flex items-center gap-4 mb-6">
+              <span class="flex items-center justify-center w-10 h-10 rounded-full bg-amber-500/10 text-amber-600 font-bold text-sm">4</span>
+              <h3 class="text-2xl md:text-3xl font-bold">目标驱动执行</h3>
+            </div>
+            <p class="text-amber-600 font-semibold text-lg mb-6">定义成功标准。循环直至验证通过。</p>
+            <p class="text-muted mb-8 leading-relaxed">将指令性任务转化为可验证的目标：</p>
+
+            <div class="overflow-x-auto mb-8">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="border-b-2 border-ink/10">
+                    <th class="text-left py-3 pr-6 font-bold text-muted">而不是……</th>
+                    <th class="text-left py-3 font-bold text-accent2">转化为……</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="border-b border-ink/5">
+                    <td class="py-3 pr-6 text-muted line-through">"添加验证"</td>
+                    <td class="py-3 font-medium">"为无效输入编写测试，然后使测试通过"</td>
+                  </tr>
+                  <tr class="border-b border-ink/5">
+                    <td class="py-3 pr-6 text-muted line-through">"修复 Bug"</td>
+                    <td class="py-3 font-medium">"编写一个能复现它的测试，然后使测试通过"</td>
+                  </tr>
+                  <tr>
+                    <td class="py-3 pr-6 text-muted line-through">"重构 X"</td>
+                    <td class="py-3 font-medium">"确保重构前后的测试都能通过"</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="bg-ink rounded-2xl p-6 font-mono text-sm text-gray-300 leading-relaxed">
+              <p class="text-gray-500 mb-3">// 多步骤任务计划模板</p>
+              <p><span class="text-amber-300">1.</span> [步骤] <span class="text-gray-500">→</span> <span class="text-green-400">验证：[检查项]</span></p>
+              <p><span class="text-amber-300">2.</span> [步骤] <span class="text-gray-500">→</span> <span class="text-green-400">验证：[检查项]</span></p>
+              <p><span class="text-amber-300">3.</span> [步骤] <span class="text-gray-500">→</span> <span class="text-green-400">验证：[检查项]</span></p>
+            </div>
+
+            <p class="mt-6 text-sm text-muted">强大的成功标准让 LLM 能够独立循环。薄弱的标准（如"让它工作"）需要不断的澄清。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Key Insight -->
+  <section class="py-20 bg-ink relative z-10 overflow-hidden">
+    <div class="absolute inset-0 opacity-20">
+      <div class="absolute top-0 left-1/4 w-96 h-96 bg-accent rounded-full blur-[200px]"></div>
+    </div>
+    <div class="max-w-3xl mx-auto px-6 relative z-10 text-center">
+      <p class="text-sm font-mono tracking-widest uppercase text-amber-400 mb-8">核心见解</p>
+      <blockquote class="text-2xl md:text-3xl text-white font-light leading-relaxed mb-8">
+        "LLM 非常擅长不断循环直到达到特定目标……<span class="text-amber-300 font-medium">不要告诉它该做什么，给它成功标准，然后看它发挥。</span>"
+      </blockquote>
+      <p class="text-gray-400">—— Andrej Karpathy</p>
+    </div>
+  </section>
+
+  <!-- Install Section -->
+  <section id="install" class="py-20 md:py-28 relative z-10">
+    <div class="max-w-5xl mx-auto px-6">
+      <div class="text-center mb-16 fade-in">
+        <p class="text-sm font-mono tracking-widest uppercase text-accent mb-3">快速开始</p>
+        <h2 class="text-3xl md:text-4xl font-bold tracking-tight">安装方式</h2>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-8">
+        <!-- Option A -->
+        <div class="bg-white rounded-3xl p-8 shadow-sm card-hover fade-in stagger-1">
+          <div class="flex items-center gap-3 mb-6">
+            <span class="px-3 py-1 bg-accent text-white text-xs font-bold rounded-full">推荐</span>
+            <h3 class="font-bold text-lg">选项 A：Claude Code 插件</h3>
+          </div>
+          <p class="text-muted text-sm mb-6">将指南作为插件安装，所有项目通用。</p>
+          <div class="space-y-4">
+            <div>
+              <p class="text-xs font-mono text-muted mb-2">步骤 1：添加市场</p>
+              <div class="bg-ink rounded-xl p-4 font-mono text-sm text-green-400 overflow-x-auto">
+                <span class="text-gray-500 select-none">$ </span>/plugin marketplace add forrestchang/andrej-karpathy-skills
+              </div>
+            </div>
+            <div>
+              <p class="text-xs font-mono text-muted mb-2">步骤 2：安装插件</p>
+              <div class="bg-ink rounded-xl p-4 font-mono text-sm text-green-400 overflow-x-auto">
+                <span class="text-gray-500 select-none">$ </span>/plugin install andrej-karpathy-skills@karpathy-skills
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Option B -->
+        <div class="bg-white rounded-3xl p-8 shadow-sm card-hover fade-in stagger-2">
+          <h3 class="font-bold text-lg mb-6">选项 B：CLAUDE.md（按项目）</h3>
+          <p class="text-muted text-sm mb-6">直接下载文件到项目中使用。</p>
+          <div class="space-y-4">
+            <div>
+              <p class="text-xs font-mono text-muted mb-2">新项目</p>
+              <div class="bg-ink rounded-xl p-4 font-mono text-sm text-green-400 overflow-x-auto">
+                <span class="text-gray-500 select-none">$ </span>curl -o CLAUDE.md https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/main/CLAUDE.md
+              </div>
+            </div>
+            <div>
+              <p class="text-xs font-mono text-muted mb-2">现有项目（追加）</p>
+              <div class="bg-ink rounded-xl p-4 font-mono text-sm text-green-400 overflow-x-auto">
+                <span class="text-gray-500 select-none">$ </span>echo "" >> CLAUDE.md && curl ... >> CLAUDE.md
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Effectiveness -->
+  <section id="effectiveness" class="py-20 md:py-28 bg-white/50 relative z-10">
+    <div class="max-w-5xl mx-auto px-6">
+      <div class="text-center mb-16 fade-in">
+        <p class="text-sm font-mono tracking-widest uppercase text-accent2 mb-3">效果验证</p>
+        <h2 class="text-3xl md:text-4xl font-bold tracking-tight">如何判断其有效性</h2>
+        <p class="mt-4 text-muted max-w-xl mx-auto">如果看到以下情况，说明这些准则正在发挥作用</p>
+      </div>
+
+      <div class="grid sm:grid-cols-2 gap-6">
+        <div class="flex items-start gap-4 p-6 bg-white rounded-2xl shadow-sm card-hover fade-in stagger-1">
+          <div class="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+          </div>
+          <div>
+            <h4 class="font-bold mb-1">Diff 更加干净</h4>
+            <p class="text-sm text-muted">减少了不必要的更改，只出现请求的更改</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-4 p-6 bg-white rounded-2xl shadow-sm card-hover fade-in stagger-2">
+          <div class="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+          </div>
+          <div>
+            <h4 class="font-bold mb-1">代码首次就够简洁</h4>
+            <p class="text-sm text-muted">减少了因过度复杂而导致的重写</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-4 p-6 bg-white rounded-2xl shadow-sm card-hover fade-in stagger-3">
+          <div class="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+          </div>
+          <div>
+            <h4 class="font-bold mb-1">先问后做</h4>
+            <p class="text-sm text-muted">在实现前提出澄清问题，而不是在出错后</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-4 p-6 bg-white rounded-2xl shadow-sm card-hover fade-in stagger-4">
+          <div class="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+          </div>
+          <div>
+            <h4 class="font-bold mb-1">PR 干净最小</h4>
+            <p class="text-sm text-muted">没有顺带的重构或"改进"</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Customization -->
+  <section class="py-20 relative z-10">
+    <div class="max-w-3xl mx-auto px-6">
+      <div class="bg-white rounded-3xl p-8 md:p-12 shadow-sm fade-in">
+        <h2 class="text-2xl md:text-3xl font-bold mb-4">自定义</h2>
+        <p class="text-muted mb-8 leading-relaxed">这些指南旨在与特定项目的指令合并。将它们添加到现有的 <code>CLAUDE.md</code> 或创建一个新文件。</p>
+        <div class="bg-ink rounded-2xl p-6 font-mono text-sm leading-relaxed overflow-x-auto">
+          <p class="text-gray-500">## 项目特定指南</p>
+          <p class="text-gray-300 mt-2">- <span class="text-amber-300">使用 TypeScript 严格模式</span></p>
+          <p class="text-gray-300">- <span class="text-amber-300">所有 API 端点必须有测试</span></p>
+          <p class="text-gray-300">- <span class="text-amber-300">遵循 src/utils/errors.ts 中现有的错误处理模式</span></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tradeoff Note -->
+  <section class="py-16 relative z-10 bg-white/50">
+    <div class="max-w-3xl mx-auto px-6 text-center fade-in">
+      <div class="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 rounded-full text-amber-700 text-sm font-medium mb-6">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+        权衡说明
+      </div>
+      <p class="text-lg leading-relaxed text-muted">
+        这些准则倾向于<span class="font-semibold text-ink">谨慎而非速度</span>。对于琐碎的任务（简单的错别字修复、显而易见的一行代码），请自行判断 —— 并非每一项更改都需要严苛的流程。
+      </p>
+      <p class="mt-4 text-lg leading-relaxed text-muted">
+        目标是<span class="font-semibold text-accent">减少非琐碎工作中成本高昂的错误</span>，而不是减慢简单任务的速度。
+      </p>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-12 bg-ink text-gray-400 relative z-10">
+    <div class="max-w-5xl mx-auto px-6">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+        <div class="flex items-center gap-3">
+          <span class="text-white font-bold text-lg"><span class="text-accent">K</span>arpathy 指南</span>
+          <span class="text-gray-600">|</span>
+          <span class="text-sm">MIT License</span>
+        </div>
+        <div class="flex items-center gap-6 text-sm">
+          <a href="https://x.com/karpathy/status/2015883857489522876" target="_blank" class="hover:text-white transition-colors">Karpathy 原文</a>
+          <a href="https://github.com/forrestchang/andrej-karpathy-skills" target="_blank" class="hover:text-white transition-colors flex items-center gap-1.5">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+            GitHub
+          </a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Mobile menu toggle
+    const btn = document.getElementById('mobile-menu-btn');
+    const menu = document.getElementById('mobile-menu');
+    btn.addEventListener('click', () => menu.classList.toggle('hidden'));
+    menu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => menu.classList.add('hidden')));
+
+    // Intersection Observer for fade-in animations
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.animationPlayState = 'running';
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.fade-in').forEach(el => {
+      el.style.animationPlayState = 'paused';
+      observer.observe(el);
+    });
+  </script>
+</body>
+</html>
