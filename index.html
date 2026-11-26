@@ -127,6 +127,41 @@
 
     h1, h2, h3 { text-wrap: balance; }
 
+    ::selection { background: rgba(196, 93, 62, 0.22); }
+
+    /* 导航：首屏透明叠在深色主视觉上，滚动后变为羊皮纸底色 */
+    .site-nav {
+      background: transparent;
+      border-bottom-color: transparent;
+      transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+    .site-nav .nav-brand { color: #f5f0e8; }
+    .site-nav .nav-link-item { color: rgba(245,240,232,0.75); }
+    .site-nav .nav-link-item:hover,
+    .site-nav .nav-link-item.active { color: #ffffff; }
+    .site-nav .nav-gh {
+      background: rgba(245,240,232,0.12);
+      color: #f5f0e8;
+      border: 1px solid rgba(245,240,232,0.2);
+    }
+    .site-nav .nav-gh:hover { background: rgba(245,240,232,0.22); }
+    .site-nav .nav-burger { color: rgba(245,240,232,0.8); }
+
+    .site-nav.scrolled {
+      background: rgba(245,240,232,0.96);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      border-bottom-color: #e8e0d0;
+      box-shadow: 0 1px 12px rgba(10,10,11,0.05);
+    }
+    .site-nav.scrolled .nav-brand { color: #0a0a0b; }
+    .site-nav.scrolled .nav-link-item { color: #6b6560; }
+    .site-nav.scrolled .nav-link-item:hover,
+    .site-nav.scrolled .nav-link-item.active { color: #0a0a0b; }
+    .site-nav.scrolled .nav-gh { background: #0a0a0b; color: #f5f0e8; border-color: transparent; }
+    .site-nav.scrolled .nav-gh:hover { background: rgba(10,10,11,0.82); }
+    .site-nav.scrolled .nav-burger { color: #6b6560; }
+
     /* 键盘可见焦点 */
     :focus-visible {
       outline: 2px solid #c45d3e;
@@ -134,27 +169,55 @@
       border-radius: 4px;
     }
 
+    /* 瘦滚动条 */
+    * { scrollbar-width: thin; scrollbar-color: rgba(10,10,11,0.25) transparent; }
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(10,10,11,0.22);
+      background-clip: content-box;
+      border: 2px solid transparent;
+      border-radius: 999px;
+    }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(10,10,11,0.35); background-clip: content-box; }
+
     /* 命令块与复制按钮 */
-    .cmd { position: relative; }
-    .cmd pre { margin: 0; }
+    .cmd pre { margin: 0; white-space: pre-wrap; overflow-wrap: break-word; }
     .cmd code { background: none; padding: 0; font-size: inherit; }
+    .cmd-head {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 0.5rem; padding: 0.5rem 0.6rem 0.25rem 1rem;
+    }
+    .cmd-label {
+      font-size: 0.65rem; letter-spacing: 0.14em; text-transform: uppercase;
+      color: rgba(245,240,232,0.35); user-select: none;
+    }
     .copy-btn {
-      position: absolute; top: 0.5rem; right: 0.5rem;
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.7rem; line-height: 1.2;
       color: rgba(245,240,232,0.7);
       background: rgba(255,255,255,0.08);
       border: 1px solid rgba(255,255,255,0.14);
       border-radius: 6px;
-      padding: 5px 8px;
+      padding: 4px 8px;
       cursor: pointer;
       transition: background 0.2s ease, color 0.2s ease;
     }
     .copy-btn:hover { background: rgba(255,255,255,0.18); color: #f5f0e8; }
     .copy-btn.copied { color: #6ee7b7; border-color: rgba(110,231,183,0.45); }
 
+    @media print {
+      .site-nav, .grain, .copy-btn, .cmd-head { display: none !important; }
+      body { background: #ffffff; }
+      .fade-in { animation: none !important; opacity: 1 !important; transform: none !important; }
+      .card-hover, .card-hover:hover { box-shadow: none; transform: none; }
+      section { break-inside: avoid; }
+      a { text-decoration: none; color: inherit; }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
+      .site-nav { transition: none; }
       .fade-in { animation: none !important; opacity: 1 !important; transform: none !important; }
       .card-hover, .card-hover:hover { transition: none; transform: none; }
       .nav-link::after { transition: none; }
@@ -167,23 +230,23 @@
   <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[60] focus:px-4 focus:py-2 focus:bg-ink focus:text-parchment focus:rounded-lg">跳到主要内容</a>
 
   <!-- Nav -->
-  <nav aria-label="主导航" class="fixed top-0 w-full z-50 backdrop-blur-md bg-parchment/80 border-b border-warm">
+  <nav id="site-nav" aria-label="主导航" class="site-nav fixed top-0 w-full z-50 border-b">
     <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-      <a href="#main" class="font-bold text-lg tracking-tight">
+      <a href="#main" class="nav-brand font-bold text-lg tracking-tight">
         <span class="text-accent">K</span>arpathy 指南
       </a>
-      <div class="hidden md:flex items-center gap-8 text-sm font-medium text-muted">
-        <a href="#problems" class="nav-link hover:text-ink transition-colors">问题</a>
-        <a href="#principles" class="nav-link hover:text-ink transition-colors">四大原则</a>
-        <a href="#install" class="nav-link hover:text-ink transition-colors">安装</a>
-        <a href="#effectiveness" class="nav-link hover:text-ink transition-colors">有效性</a>
-        <a href="https://github.com/forrestchang/andrej-karpathy-skills" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 px-4 py-2 bg-ink text-parchment rounded-full hover:bg-ink/80 transition-colors">
+      <div class="hidden md:flex items-center gap-8 text-sm font-medium">
+        <a href="#problems" class="nav-link nav-link-item transition-colors">问题</a>
+        <a href="#principles" class="nav-link nav-link-item transition-colors">四大原则</a>
+        <a href="#install" class="nav-link nav-link-item transition-colors">安装</a>
+        <a href="#effectiveness" class="nav-link nav-link-item transition-colors">有效性</a>
+        <a href="https://github.com/forrestchang/andrej-karpathy-skills" target="_blank" rel="noopener" class="nav-gh inline-flex items-center gap-1.5 px-4 py-2 rounded-full transition-colors">
           <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
           GitHub
         </a>
       </div>
       <!-- Mobile menu button -->
-      <button id="mobile-menu-btn" type="button" class="md:hidden p-2 -mr-2 text-muted hover:text-ink" aria-label="打开导航菜单" aria-expanded="false" aria-controls="mobile-menu">
+      <button id="mobile-menu-btn" type="button" class="nav-burger md:hidden p-2 -mr-2" aria-label="打开导航菜单" aria-expanded="false" aria-controls="mobile-menu">
         <svg class="w-6 h-6" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
         </svg>
@@ -191,11 +254,11 @@
     </div>
     <!-- Mobile menu -->
     <div id="mobile-menu" class="hidden md:hidden bg-parchment border-t border-warm">
-      <div class="px-6 py-4 flex flex-col gap-3 text-sm font-medium text-muted">
-        <a href="#problems" class="hover:text-ink">问题</a>
-        <a href="#principles" class="hover:text-ink">四大原则</a>
-        <a href="#install" class="hover:text-ink">安装</a>
-        <a href="#effectiveness" class="hover:text-ink">有效性</a>
+      <div class="px-6 py-3 flex flex-col text-sm font-medium text-muted">
+        <a href="#problems" class="py-2.5 rounded-lg hover:text-ink">问题</a>
+        <a href="#principles" class="py-2.5 rounded-lg hover:text-ink">四大原则</a>
+        <a href="#install" class="py-2.5 rounded-lg hover:text-ink">安装</a>
+        <a href="#effectiveness" class="py-2.5 rounded-lg hover:text-ink">有效性</a>
       </div>
     </div>
   </nav>
@@ -532,7 +595,7 @@
 
       <div class="grid md:grid-cols-2 gap-8">
         <!-- Option A -->
-        <div class="bg-white rounded-3xl p-8 shadow-sm card-hover fade-in stagger-1">
+        <div class="min-w-0 bg-white rounded-3xl p-8 shadow-sm card-hover fade-in stagger-1">
           <div class="flex flex-wrap items-center gap-3 mb-6">
             <span class="px-3 py-1 bg-accent text-white text-xs font-bold rounded-full">推荐</span>
             <h3 class="font-bold text-lg">选项 A：Claude Code 插件</h3>
@@ -542,38 +605,53 @@
             <div>
               <p class="text-xs font-mono text-muted mb-2">步骤 1：添加市场</p>
               <div class="cmd bg-ink rounded-xl font-mono text-sm text-green-400">
-                <pre class="p-4 pr-20 overflow-x-auto"><code>$ /plugin marketplace add forrestchang/andrej-karpathy-skills</code></pre>
-                <button type="button" class="copy-btn" aria-label="复制命令">复制</button>
+                <div class="cmd-head">
+                  <span class="cmd-label">claude code</span>
+                  <button type="button" class="copy-btn" aria-label="复制命令" aria-live="polite">复制</button>
+                </div>
+                <pre class="px-4 pb-4"><code>$ /plugin marketplace add forrestchang/andrej-karpathy-skills</code></pre>
               </div>
             </div>
             <div>
               <p class="text-xs font-mono text-muted mb-2">步骤 2：安装插件</p>
               <div class="cmd bg-ink rounded-xl font-mono text-sm text-green-400">
-                <pre class="p-4 pr-20 overflow-x-auto"><code>$ /plugin install andrej-karpathy-skills@karpathy-skills</code></pre>
-                <button type="button" class="copy-btn" aria-label="复制命令">复制</button>
+                <div class="cmd-head">
+                  <span class="cmd-label">claude code</span>
+                  <button type="button" class="copy-btn" aria-label="复制命令" aria-live="polite">复制</button>
+                </div>
+                <pre class="px-4 pb-4"><code>$ /plugin install andrej-karpathy-skills@karpathy-skills</code></pre>
               </div>
             </div>
           </div>
         </div>
 
         <!-- Option B -->
-        <div class="bg-white rounded-3xl p-8 shadow-sm card-hover fade-in stagger-2">
-          <h3 class="font-bold text-lg mb-6">选项 B：CLAUDE.md（按项目）</h3>
+        <div class="min-w-0 bg-white rounded-3xl p-8 shadow-sm card-hover fade-in stagger-2">
+          <div class="flex flex-wrap items-center gap-3 mb-6">
+            <span class="px-3 py-1 bg-accent2/10 text-accent2 text-xs font-bold rounded-full">按项目</span>
+            <h3 class="font-bold text-lg">选项 B：CLAUDE.md</h3>
+          </div>
           <p class="text-muted text-sm mb-6">直接下载文件到项目中使用。</p>
           <div class="space-y-4">
             <div>
               <p class="text-xs font-mono text-muted mb-2">新项目</p>
               <div class="cmd bg-ink rounded-xl font-mono text-sm text-green-400">
-                <pre class="p-4 pr-20 overflow-x-auto"><code>$ curl -o CLAUDE.md https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/main/CLAUDE.md</code></pre>
-                <button type="button" class="copy-btn" aria-label="复制命令">复制</button>
+                <div class="cmd-head">
+                  <span class="cmd-label">bash</span>
+                  <button type="button" class="copy-btn" aria-label="复制命令" aria-live="polite">复制</button>
+                </div>
+                <pre class="px-4 pb-4"><code>$ curl -o CLAUDE.md https://<wbr>raw.githubusercontent.com/<wbr>forrestchang/<wbr>andrej-karpathy-skills/<wbr>main/<wbr>CLAUDE.md</code></pre>
               </div>
             </div>
             <div>
               <p class="text-xs font-mono text-muted mb-2">现有项目（追加）</p>
               <div class="cmd bg-ink rounded-xl font-mono text-sm text-green-400">
-                <pre class="p-4 pr-20 overflow-x-auto"><code>$ echo "" >> CLAUDE.md
-$ curl https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/main/CLAUDE.md >> CLAUDE.md</code></pre>
-                <button type="button" class="copy-btn" aria-label="复制命令">复制</button>
+                <div class="cmd-head">
+                  <span class="cmd-label">bash</span>
+                  <button type="button" class="copy-btn" aria-label="复制命令" aria-live="polite">复制</button>
+                </div>
+                <pre class="px-4 pb-4"><code>$ echo "" >> CLAUDE.md
+$ curl https://<wbr>raw.githubusercontent.com/<wbr>forrestchang/<wbr>andrej-karpathy-skills/<wbr>main/<wbr>CLAUDE.md >> CLAUDE.md</code></pre>
               </div>
             </div>
           </div>
@@ -678,7 +756,7 @@ $ curl https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/mai
         <div class="flex items-center gap-3">
           <span class="text-white font-bold text-lg"><span class="text-accent">K</span>arpathy 指南</span>
           <span class="text-gray-600">|</span>
-          <span class="text-sm">MIT License</span>
+          <span class="text-sm">MIT License · © 2026</span>
         </div>
         <div class="flex items-center gap-6 text-sm">
           <a href="https://x.com/karpathy/status/2015883857489522876" target="_blank" rel="noopener" class="hover:text-white transition-colors">Karpathy 原文</a>
@@ -695,11 +773,14 @@ $ curl https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/mai
     // 移动端菜单，保持 aria-expanded 与实际状态同步
     const btn = document.getElementById('mobile-menu-btn');
     const menu = document.getElementById('mobile-menu');
+    let menuOpen = false;
     const setMenu = (open) => {
       if (!menu || !btn) return;
+      menuOpen = open;
       menu.classList.toggle('hidden', !open);
       btn.setAttribute('aria-expanded', String(open));
       btn.setAttribute('aria-label', open ? '关闭导航菜单' : '打开导航菜单');
+      syncNav();
     };
     btn.addEventListener('click', () => setMenu(btn.getAttribute('aria-expanded') !== 'true'));
     menu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => setMenu(false)));
@@ -707,6 +788,31 @@ $ curl https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/mai
     document.addEventListener('click', (e) => {
       if (!menu.contains(e.target) && !btn.contains(e.target)) setMenu(false);
     });
+
+    // 导航：滚动后切换为实色背景，并高亮当前区块
+    const siteNav = document.getElementById('site-nav');
+    const syncNav = () => siteNav.classList.toggle('scrolled', menuOpen || window.scrollY > 24);
+    syncNav();
+    window.addEventListener('scroll', syncNav, { passive: true });
+
+    const navItems = Array.from(document.querySelectorAll('.nav-link-item'));
+    const navSections = navItems
+      .map(a => document.querySelector(a.getAttribute('href')))
+      .filter(Boolean);
+    if ('IntersectionObserver' in window) {
+      const spy = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          navItems.forEach((link) => {
+            const active = link.getAttribute('href') === '#' + entry.target.id;
+            link.classList.toggle('active', active);
+            if (active) link.setAttribute('aria-current', 'true');
+            else link.removeAttribute('aria-current');
+          });
+        });
+      }, { rootMargin: '-45% 0px -50% 0px' });
+      navSections.forEach(section => spy.observe(section));
+    }
 
     // 复制安装命令
     const copyText = async (text) => {
