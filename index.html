@@ -4,9 +4,24 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Karpathy 启发式 Claude Code 指南</title>
+  <meta name="description" content="一个 CLAUDE.md 文件、四条原则，解决 LLM 编程中最常见的陷阱：错误假设、过度工程、无关修改与不可验证的目标。源自 Andrej Karpathy 的观察。">
+  <meta name="author" content="forrestchang">
+  <meta name="theme-color" content="#0a0a0b">
+  <meta name="color-scheme" content="light">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Karpathy 启发式 Claude Code 指南">
+  <meta property="og:description" content="一个 CLAUDE.md 文件、四条原则，解决 LLM 编程中最常见的陷阱。">
+  <meta property="og:locale" content="zh_CN">
+  <meta name="twitter:card" content="summary">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230a0a0b'/%3E%3Ctext x='50' y='73' font-family='system-ui,sans-serif' font-size='64' font-weight='700' text-anchor='middle' fill='%23c45d3e'%3EK%3C/text%3E%3C/svg%3E">
+  <style>html, body { background: #f5f0e8; color: #0a0a0b; } body { font-family: "Noto Sans SC", system-ui, sans-serif; }</style>
+  <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
+  <link rel="dns-prefetch" href="https://cdn.tailwindcss.com">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <noscript><style>.fade-in { animation: none !important; opacity: 1 !important; transform: none !important; }</style></noscript>
   <script>
     tailwind.config = {
       theme: {
@@ -106,15 +121,55 @@
     .nav-link:hover::after {
       width: 100%;
     }
+
+    /* 锚点跳转时避开固定导航栏 */
+    [id] { scroll-margin-top: 5rem; }
+
+    h1, h2, h3 { text-wrap: balance; }
+
+    /* 键盘可见焦点 */
+    :focus-visible {
+      outline: 2px solid #c45d3e;
+      outline-offset: 3px;
+      border-radius: 4px;
+    }
+
+    /* 命令块与复制按钮 */
+    .cmd { position: relative; }
+    .cmd pre { margin: 0; }
+    .cmd code { background: none; padding: 0; font-size: inherit; }
+    .copy-btn {
+      position: absolute; top: 0.5rem; right: 0.5rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem; line-height: 1.2;
+      color: rgba(245,240,232,0.7);
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 6px;
+      padding: 5px 8px;
+      cursor: pointer;
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+    .copy-btn:hover { background: rgba(255,255,255,0.18); color: #f5f0e8; }
+    .copy-btn.copied { color: #6ee7b7; border-color: rgba(110,231,183,0.45); }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .fade-in { animation: none !important; opacity: 1 !important; transform: none !important; }
+      .card-hover, .card-hover:hover { transition: none; transform: none; }
+      .nav-link::after { transition: none; }
+    }
   </style>
 </head>
 <body class="font-sans text-ink antialiased">
-  <div class="grain"></div>
+  <div class="grain" aria-hidden="true"></div>
+
+  <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[60] focus:px-4 focus:py-2 focus:bg-ink focus:text-parchment focus:rounded-lg">跳到主要内容</a>
 
   <!-- Nav -->
-  <nav class="fixed top-0 w-full z-50 backdrop-blur-md bg-parchment/80 border-b border-warm">
+  <nav aria-label="主导航" class="fixed top-0 w-full z-50 backdrop-blur-md bg-parchment/80 border-b border-warm">
     <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-      <a href="#" class="font-bold text-lg tracking-tight">
+      <a href="#main" class="font-bold text-lg tracking-tight">
         <span class="text-accent">K</span>arpathy 指南
       </a>
       <div class="hidden md:flex items-center gap-8 text-sm font-medium text-muted">
@@ -122,14 +177,14 @@
         <a href="#principles" class="nav-link hover:text-ink transition-colors">四大原则</a>
         <a href="#install" class="nav-link hover:text-ink transition-colors">安装</a>
         <a href="#effectiveness" class="nav-link hover:text-ink transition-colors">有效性</a>
-        <a href="https://github.com/forrestchang/andrej-karpathy-skills" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-2 bg-ink text-parchment rounded-full hover:bg-ink/80 transition-colors">
+        <a href="https://github.com/forrestchang/andrej-karpathy-skills" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 px-4 py-2 bg-ink text-parchment rounded-full hover:bg-ink/80 transition-colors">
           <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
           GitHub
         </a>
       </div>
       <!-- Mobile menu button -->
-      <button id="mobile-menu-btn" class="md:hidden p-2 text-muted hover:text-ink">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <button id="mobile-menu-btn" type="button" class="md:hidden p-2 -mr-2 text-muted hover:text-ink" aria-label="打开导航菜单" aria-expanded="false" aria-controls="mobile-menu">
+        <svg class="w-6 h-6" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
         </svg>
       </button>
@@ -145,9 +200,11 @@
     </div>
   </nav>
 
+  <main id="main">
+
   <!-- Hero -->
   <section class="hero-gradient relative overflow-hidden pt-32 pb-24 md:pt-44 md:pb-36">
-    <div class="absolute inset-0 opacity-10">
+    <div class="absolute inset-0 opacity-10" aria-hidden="true">
       <div class="absolute top-20 left-10 w-72 h-72 bg-accent rounded-full blur-[120px]"></div>
       <div class="absolute bottom-10 right-20 w-96 h-96 bg-blue-500 rounded-full blur-[150px]"></div>
     </div>
@@ -173,7 +230,7 @@
     </div>
     <!-- Decorative bottom wave -->
     <div class="absolute bottom-0 left-0 right-0">
-      <svg viewBox="0 0 1440 60" fill="none" class="w-full"><path d="M0 60V20C240 0 480 40 720 30S1200 0 1440 20V60H0Z" fill="#f5f0e8"/></svg>
+      <svg viewBox="0 0 1440 60" fill="none" class="w-full" aria-hidden="true"><path d="M0 60V20C240 0 480 40 720 30S1200 0 1440 20V60H0Z" fill="#f5f0e8"/></svg>
     </div>
   </section>
 
@@ -413,10 +470,11 @@
 
             <div class="overflow-x-auto mb-8">
               <table class="w-full text-sm">
+                <caption class="sr-only">将指令性任务转化为可验证的目标</caption>
                 <thead>
                   <tr class="border-b-2 border-ink/10">
-                    <th class="text-left py-3 pr-6 font-bold text-muted">而不是……</th>
-                    <th class="text-left py-3 font-bold text-accent2">转化为……</th>
+                    <th scope="col" class="text-left py-3 pr-6 font-bold text-muted">而不是……</th>
+                    <th scope="col" class="text-left py-3 font-bold text-accent2">转化为……</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -475,7 +533,7 @@
       <div class="grid md:grid-cols-2 gap-8">
         <!-- Option A -->
         <div class="bg-white rounded-3xl p-8 shadow-sm card-hover fade-in stagger-1">
-          <div class="flex items-center gap-3 mb-6">
+          <div class="flex flex-wrap items-center gap-3 mb-6">
             <span class="px-3 py-1 bg-accent text-white text-xs font-bold rounded-full">推荐</span>
             <h3 class="font-bold text-lg">选项 A：Claude Code 插件</h3>
           </div>
@@ -483,14 +541,16 @@
           <div class="space-y-4">
             <div>
               <p class="text-xs font-mono text-muted mb-2">步骤 1：添加市场</p>
-              <div class="bg-ink rounded-xl p-4 font-mono text-sm text-green-400 overflow-x-auto">
-                <span class="text-gray-500 select-none">$ </span>/plugin marketplace add forrestchang/andrej-karpathy-skills
+              <div class="cmd bg-ink rounded-xl font-mono text-sm text-green-400">
+                <pre class="p-4 pr-20 overflow-x-auto"><code>$ /plugin marketplace add forrestchang/andrej-karpathy-skills</code></pre>
+                <button type="button" class="copy-btn" aria-label="复制命令">复制</button>
               </div>
             </div>
             <div>
               <p class="text-xs font-mono text-muted mb-2">步骤 2：安装插件</p>
-              <div class="bg-ink rounded-xl p-4 font-mono text-sm text-green-400 overflow-x-auto">
-                <span class="text-gray-500 select-none">$ </span>/plugin install andrej-karpathy-skills@karpathy-skills
+              <div class="cmd bg-ink rounded-xl font-mono text-sm text-green-400">
+                <pre class="p-4 pr-20 overflow-x-auto"><code>$ /plugin install andrej-karpathy-skills@karpathy-skills</code></pre>
+                <button type="button" class="copy-btn" aria-label="复制命令">复制</button>
               </div>
             </div>
           </div>
@@ -503,19 +563,27 @@
           <div class="space-y-4">
             <div>
               <p class="text-xs font-mono text-muted mb-2">新项目</p>
-              <div class="bg-ink rounded-xl p-4 font-mono text-sm text-green-400 overflow-x-auto">
-                <span class="text-gray-500 select-none">$ </span>curl -o CLAUDE.md https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/main/CLAUDE.md
+              <div class="cmd bg-ink rounded-xl font-mono text-sm text-green-400">
+                <pre class="p-4 pr-20 overflow-x-auto"><code>$ curl -o CLAUDE.md https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/main/CLAUDE.md</code></pre>
+                <button type="button" class="copy-btn" aria-label="复制命令">复制</button>
               </div>
             </div>
             <div>
               <p class="text-xs font-mono text-muted mb-2">现有项目（追加）</p>
-              <div class="bg-ink rounded-xl p-4 font-mono text-sm text-green-400 overflow-x-auto">
-                <span class="text-gray-500 select-none">$ </span>echo "" >> CLAUDE.md && curl ... >> CLAUDE.md
+              <div class="cmd bg-ink rounded-xl font-mono text-sm text-green-400">
+                <pre class="p-4 pr-20 overflow-x-auto"><code>$ echo "" >> CLAUDE.md
+$ curl https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/main/CLAUDE.md >> CLAUDE.md</code></pre>
+                <button type="button" class="copy-btn" aria-label="复制命令">复制</button>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      <p class="mt-10 text-center text-sm text-muted fade-in">
+        使用 Cursor？仓库内置的 <code>.cursor/rules/karpathy-guidelines.mdc</code> 打开即生效，详见
+        <a href="https://github.com/forrestchang/andrej-karpathy-skills/blob/main/CURSOR.md" target="_blank" rel="noopener" class="text-accent font-medium underline underline-offset-2 hover:text-ink transition-colors">CURSOR.md</a>。
+      </p>
     </div>
   </section>
 
@@ -601,6 +669,8 @@
     </div>
   </section>
 
+  </main>
+
   <!-- Footer -->
   <footer class="py-12 bg-ink text-gray-400 relative z-10">
     <div class="max-w-5xl mx-auto px-6">
@@ -611,8 +681,8 @@
           <span class="text-sm">MIT License</span>
         </div>
         <div class="flex items-center gap-6 text-sm">
-          <a href="https://x.com/karpathy/status/2015883857489522876" target="_blank" class="hover:text-white transition-colors">Karpathy 原文</a>
-          <a href="https://github.com/forrestchang/andrej-karpathy-skills" target="_blank" class="hover:text-white transition-colors flex items-center gap-1.5">
+          <a href="https://x.com/karpathy/status/2015883857489522876" target="_blank" rel="noopener" class="hover:text-white transition-colors">Karpathy 原文</a>
+          <a href="https://github.com/forrestchang/andrej-karpathy-skills" target="_blank" rel="noopener" class="hover:text-white transition-colors flex items-center gap-1.5">
             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
             GitHub
           </a>
@@ -622,26 +692,78 @@
   </footer>
 
   <script>
-    // Mobile menu toggle
+    // 移动端菜单，保持 aria-expanded 与实际状态同步
     const btn = document.getElementById('mobile-menu-btn');
     const menu = document.getElementById('mobile-menu');
-    btn.addEventListener('click', () => menu.classList.toggle('hidden'));
-    menu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => menu.classList.add('hidden')));
-
-    // Intersection Observer for fade-in animations
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.style.animationPlayState = 'running';
-          observer.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.1 });
-
-    document.querySelectorAll('.fade-in').forEach(el => {
-      el.style.animationPlayState = 'paused';
-      observer.observe(el);
+    const setMenu = (open) => {
+      if (!menu || !btn) return;
+      menu.classList.toggle('hidden', !open);
+      btn.setAttribute('aria-expanded', String(open));
+      btn.setAttribute('aria-label', open ? '关闭导航菜单' : '打开导航菜单');
+    };
+    btn.addEventListener('click', () => setMenu(btn.getAttribute('aria-expanded') !== 'true'));
+    menu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => setMenu(false)));
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setMenu(false); });
+    document.addEventListener('click', (e) => {
+      if (!menu.contains(e.target) && !btn.contains(e.target)) setMenu(false);
     });
+
+    // 复制安装命令
+    const copyText = async (text) => {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return;
+      }
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+    };
+
+    document.querySelectorAll('.cmd').forEach((cmd) => {
+      const button = cmd.querySelector('.copy-btn');
+      const code = cmd.querySelector('code');
+      if (!button || !code) return;
+      button.addEventListener('click', async () => {
+        try {
+          await copyText(code.textContent.replace(/^\$\s?/gm, '').trim());
+          button.textContent = '已复制';
+          button.classList.add('copied');
+        } catch (err) {
+          button.textContent = '复制失败';
+        }
+        setTimeout(() => {
+          button.textContent = '复制';
+          button.classList.remove('copied');
+        }, 1600);
+      });
+    });
+
+    // 滚动淡入，尊重“减少动态效果”偏好
+    const targets = document.querySelectorAll('.fade-in');
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion || !('IntersectionObserver' in window)) {
+      targets.forEach(el => { el.style.animationPlayState = 'running'; });
+    } else {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.style.animationPlayState = 'running';
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+      targets.forEach(el => {
+        el.style.animationPlayState = 'paused';
+        observer.observe(el);
+      });
+    }
   </script>
 </body>
 </html>
