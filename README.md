@@ -1,6 +1,12 @@
 # Karpathy 启发式 Claude Code 指南
 
+> 查看我的新项目 [Multica](https://github.com/multica-ai/multica) —— 一个用于运行和管理编码智能体的开源平台，支持可复用的技能。
+>
+> 在 X 上关注我：[https://x.com/jiayuan_jy](https://x.com/jiayuan_jy)
+
 一个旨在改善 Claude Code 行为的单一 `CLAUDE.md` 文件，源自 [Andrej Karpathy 对 LLM 编程陷阱的观察](https://x.com/karpathy/status/2015883857489522876)。
+
+中文 | [English](./README_EN.md)
 
 ## 问题所在
 
@@ -118,6 +124,10 @@ curl -o CLAUDE.md https://raw.githubusercontent.com/forrestchang/andrej-karpathy
 echo "" >> CLAUDE.md
 curl https://raw.githubusercontent.com/forrestchang/andrej-karpathy-skills/main/CLAUDE.md >> CLAUDE.md
 ```
+
+## 在 Cursor 中使用
+
+本仓库包含一个已提交的 Cursor 项目规则（[`.cursor/rules/karpathy-guidelines.mdc`](.cursor/rules/karpathy-guidelines.mdc)），因此在 Cursor 中打开本仓库时会自动应用相同的准则。安装步骤、在其他项目中使用该规则的方法，以及它与 Claude Code 的关系，请参阅 **[CURSOR.md](CURSOR.md)**。
 
 ## 核心见解
 
