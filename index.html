@@ -169,6 +169,20 @@
       border-radius: 4px;
     }
 
+    /* 解决方案卡片图标 */
+    .icon-tile {
+      width: 3.25rem; height: 3.25rem; margin: 0 auto;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 16px;
+      border: 1px solid rgba(10,10,11,0.04);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.75), 0 2px 6px -2px rgba(10,10,11,0.08);
+    }
+    .icon-tile svg { width: 1.75rem; height: 1.75rem; }
+    .icon-tile--think { background: linear-gradient(140deg, rgba(196,93,62,0.17), rgba(196,93,62,0.06)); color: #b4532f; }
+    .icon-tile--simple { background: linear-gradient(140deg, rgba(45,106,79,0.17), rgba(45,106,79,0.06)); color: #2d6a4f; }
+    .icon-tile--precise { background: linear-gradient(140deg, rgba(37,99,235,0.16), rgba(37,99,235,0.06)); color: #2563eb; }
+    .icon-tile--goal { background: linear-gradient(140deg, rgba(217,119,6,0.18), rgba(217,119,6,0.06)); color: #b45309; }
+
     /* 瘦滚动条 */
     * { scrollbar-width: thin; scrollbar-color: rgba(10,10,11,0.25) transparent; }
     ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -352,22 +366,46 @@
       </div>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div class="text-center p-6 rounded-2xl bg-white shadow-sm card-hover fade-in stagger-1">
-          <div class="text-3xl mb-3">🧠</div>
+          <div class="icon-tile icon-tile--think mb-4" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/>
+              <path d="M9 18h6"/>
+              <path d="M10 22h4"/>
+            </svg>
+          </div>
           <p class="font-bold text-sm">先思考<br>后编码</p>
           <p class="text-xs text-muted mt-2">错误假设<br>隐藏困惑</p>
         </div>
         <div class="text-center p-6 rounded-2xl bg-white shadow-sm card-hover fade-in stagger-2">
-          <div class="text-3xl mb-3">✂️</div>
+          <div class="icon-tile icon-tile--simple mb-4" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3.5 4.5h17l-6.5 7.6V19l-4 2.4v-9.3L3.5 4.5Z"/>
+            </svg>
+          </div>
           <p class="font-bold text-sm">简约<br>至上</p>
           <p class="text-xs text-muted mt-2">过度复杂<br>膨胀抽象</p>
         </div>
         <div class="text-center p-6 rounded-2xl bg-white shadow-sm card-hover fade-in stagger-3">
-          <div class="text-3xl mb-3">🎯</div>
+          <div class="icon-tile icon-tile--precise mb-4" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="8"/>
+              <line x1="12" y1="1.5" x2="12" y2="5"/>
+              <line x1="12" y1="19" x2="12" y2="22.5"/>
+              <line x1="1.5" y1="12" x2="5" y2="12"/>
+              <line x1="19" y1="12" x2="22.5" y2="12"/>
+              <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/>
+            </svg>
+          </div>
           <p class="font-bold text-sm">精准<br>修改</p>
           <p class="text-xs text-muted mt-2">无关编辑<br>不该动的代码</p>
         </div>
         <div class="text-center p-6 rounded-2xl bg-white shadow-sm card-hover fade-in stagger-4">
-          <div class="text-3xl mb-3">🔄</div>
+          <div class="icon-tile icon-tile--goal mb-4" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+              <line x1="4" y1="21.5" x2="4" y2="15"/>
+            </svg>
+          </div>
           <p class="font-bold text-sm">目标驱动<br>执行</p>
           <p class="text-xs text-muted mt-2">测试先行<br>可验证标准</p>
         </div>
